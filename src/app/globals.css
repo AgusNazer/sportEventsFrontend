@@ -73,6 +73,12 @@
     @apply bg-dark-900 text-white;
   }
 
+  .pagination-btn {
+    @apply flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200
+           text-gray-600 bg-white hover:bg-gray-50 hover:border-gray-300
+           transition-colors text-sm;
+  }
+
   /* Hero grid background pattern */
   .hero-pattern {
     background-image:

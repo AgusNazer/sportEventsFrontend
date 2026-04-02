@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { getSports } from "@/lib/api";
+import { useState } from "react";
 import type { EventFilters, EventLevel, Sport } from "@/types";
 
 const PROVINCIAS = [
@@ -38,10 +37,13 @@ const NIVELES: { value: EventLevel; label: string }[] = [
   { value: "AVANZADO", label: "Avanzado" },
 ];
 
-export default function EventFilters() {
+interface Props {
+  sports: Sport[];
+}
+
+export default function EventFilters({ sports }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [sports, setSports] = useState<Sport[]>([]);
 
   const [filters, setFilters] = useState<EventFilters>({
     sport: searchParams.get("sport") ?? "",
@@ -50,12 +52,6 @@ export default function EventFilters() {
     desde: searchParams.get("desde") ?? "",
     hasta: searchParams.get("hasta") ?? "",
   });
-
-  useEffect(() => {
-    getSports()
-      .then(setSports)
-      .catch(() => setSports([]));
-  }, []);
 
   function handleChange(key: keyof EventFilters, value: string) {
     setFilters((prev) => ({ ...prev, [key]: value }));

@@ -1,8 +1,11 @@
 import { Suspense } from "react";
-import { getEvents } from "@/lib/api";
+import { getEvents, getSports } from "@/lib/api";
 import EventCard from "@/components/EventCard";
 import EventFilters from "@/components/EventFilters";
-import type { EventFilters as Filters, EventLevel, EventResponse } from "@/types";
+import Pagination from "@/components/Pagination";
+import type { EventFilters as Filters, EventLevel, EventResponse, Sport } from "@/types";
+
+const PAGE_SIZE = 12;
 
 interface SearchParams {
   sport?: string;
@@ -10,6 +13,7 @@ interface SearchParams {
   nivel?: string;
   desde?: string;
   hasta?: string;
+  page?: string;
 }
 
 export default async function HomePage({
@@ -18,6 +22,7 @@ export default async function HomePage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
+  const currentPage = Math.max(1, parseInt(params.page ?? "1", 10));
 
   const filters: Filters = {
     sport: params.sport,
@@ -27,15 +32,20 @@ export default async function HomePage({
     hasta: params.hasta,
   };
 
-  let events: EventResponse[] = [];
+  let allEvents: EventResponse[] = [];
+  let sports: Sport[] = [];
   let error: string | null = null;
 
   try {
-    events = await getEvents(filters);
+    [allEvents, sports] = await Promise.all([getEvents(filters), getSports()]);
   } catch (e) {
     error = e instanceof Error ? e.message : "Error al cargar eventos";
   }
 
+  const totalItems = allEvents.length;
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+  const safePage = Math.min(currentPage, Math.max(1, totalPages));
+  const events = allEvents.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const hasFilters = Object.values(filters).some(Boolean);
 
   return (
@@ -50,9 +60,20 @@ export default async function HomePage({
             Encontrá tu<br />
             <span className="text-brand-400">próximo evento</span>
           </h1>
-          <p className="text-gray-400 text-base max-w-lg">
-            Carreras, Crossfit, Triatlones, Ciclismo y más en toda Argentina. Un solo lugar para no perderte nada.
+          <p className="text-gray-400 text-base max-w-lg mb-6">
+            Carreras, Crossfit, Triatlones, Ciclismo y más en toda Argentina.
           </p>
+
+          {/* Stats rápidas */}
+          {!error && totalItems > 0 && (
+            <div className="flex flex-wrap gap-3">
+              <StatPill value={totalItems} label="eventos" />
+              {sports.slice(0, 4).map((s) => {
+                const count = allEvents.filter((e) => e.sport.toLowerCase() === s.nombre.toLowerCase()).length;
+                return count > 0 ? <StatPill key={s.id} value={count} label={s.nombre} /> : null;
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -60,7 +81,7 @@ export default async function HomePage({
       <section className="bg-dark-900 border-b border-white/5">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <Suspense>
-            <EventFilters />
+            <EventFilters sports={sports} />
           </Suspense>
         </div>
       </section>
@@ -69,25 +90,50 @@ export default async function HomePage({
       <div className="max-w-6xl mx-auto px-4 py-10">
         {error ? (
           <ErrorMessage message={error} />
-        ) : events.length === 0 ? (
+        ) : allEvents.length === 0 ? (
           <EmptyState hasFilters={hasFilters} />
         ) : (
           <>
             <div className="flex items-center gap-3 mb-6">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500">
-                {events.length} evento{events.length !== 1 ? "s" : ""} encontrado{events.length !== 1 ? "s" : ""}
+              <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 shrink-0">
+                {totalItems} evento{totalItems !== 1 ? "s" : ""}
+                {hasFilters && " encontrados"}
               </h2>
               <div className="flex-1 h-px bg-gray-200" />
+              {totalPages > 1 && (
+                <span className="text-xs text-gray-400 shrink-0">
+                  Página {safePage} de {totalPages}
+                </span>
+              )}
             </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {events.map((event) => (
                 <EventCard key={event.id} event={event} />
               ))}
             </div>
+
+            <Suspense>
+              <Pagination
+                currentPage={safePage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={PAGE_SIZE}
+              />
+            </Suspense>
           </>
         )}
       </div>
     </>
+  );
+}
+
+function StatPill({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1">
+      <span className="text-white font-black text-sm">{value}</span>
+      <span className="text-gray-400 text-xs uppercase tracking-wide">{label}</span>
+    </div>
   );
 }
 
