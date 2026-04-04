@@ -13,7 +13,7 @@ interface Props {
 export default function Pagination({ currentPage, totalPages, totalItems, pageSize }: Props) {
   const searchParams = useSearchParams();
 
-  if (totalPages <= 1) return null;
+  if (!Number.isFinite(totalPages) || totalPages <= 1) return null;
 
   function buildUrl(page: number) {
     const params = new URLSearchParams(searchParams.toString());
@@ -36,8 +36,12 @@ export default function Pagination({ currentPage, totalPages, totalItems, pageSi
     return pages;
   }
 
-  const from = (currentPage - 1) * pageSize + 1;
-  const to = Math.min(currentPage * pageSize, totalItems);
+const safeCurrentPage = Number.isFinite(currentPage) ? currentPage : 1;
+const safePageSize = Number.isFinite(pageSize) ? pageSize : 1;
+const safeTotalItems = Number.isFinite(totalItems) ? totalItems : 0;
+
+const from = (safeCurrentPage - 1) * safePageSize + 1;
+const to = Math.min(safeCurrentPage * safePageSize, safeTotalItems);
 
   return (
     <div className="mt-10 flex flex-col items-center gap-4">

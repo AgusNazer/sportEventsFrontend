@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import { createEvent, createSport, deleteEvent, getEvents, getSports } from "@/lib/api";
 import type { EventLevel, EventResponse, Sport } from "@/types";
+import { useAuth } from "@/lib/auth";
 
 type Tab = "events" | "create-event" | "create-sport";
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("events");
+
+const { loading, rol } = useAuth("ADMIN");
+
+if (loading) return <p>Cargando...</p>;
 
   return (
     <div className="page-container">

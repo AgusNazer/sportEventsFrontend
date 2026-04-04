@@ -1,3 +1,4 @@
+// app/page.tsx
 import { Suspense } from "react";
 import { getEvents, getSports } from "@/lib/api";
 import EventCard from "@/components/EventCard";
@@ -16,6 +17,7 @@ interface SearchParams {
   page?: string;
 }
 
+// La ruta sigue siendo async porque hacemos fetch a la API
 export default async function HomePage({
   searchParams,
 }: {
@@ -25,13 +27,12 @@ export default async function HomePage({
   const currentPage = Math.max(1, parseInt(params.page ?? "1", 10));
 
   const filters: Filters = {
-    sport: params.sport,
-    provincia: params.provincia,
-    nivel: params.nivel as EventLevel | undefined,
-    desde: params.desde,
-    hasta: params.hasta,
+    sport: params.sport?.trim() || undefined,
+    provincia: params.provincia?.trim() || undefined,
+    nivel: (params.nivel?.trim() as EventLevel) || undefined,
+    desde: params.desde?.trim() || undefined,
+    hasta: params.hasta?.trim() || undefined,
   };
-
   let allEvents: EventResponse[] = [];
   let sports: Sport[] = [];
   let error: string | null = null;
@@ -42,10 +43,14 @@ export default async function HomePage({
     error = e instanceof Error ? e.message : "Error al cargar eventos";
   }
 
-  const totalItems = allEvents.length;
+  const totalItems = Array.isArray(allEvents) ? allEvents.length : 0;
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
   const safePage = Math.min(currentPage, Math.max(1, totalPages));
-  const events = allEvents.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const events = Array.isArray(allEvents)
+    ? allEvents.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+    : [];
+
   const hasFilters = Object.values(filters).some(Boolean);
 
   return (
@@ -69,7 +74,9 @@ export default async function HomePage({
             <div className="flex flex-wrap gap-3">
               <StatPill value={totalItems} label="eventos" />
               {sports.slice(0, 4).map((s) => {
-                const count = allEvents.filter((e) => e.sport.toLowerCase() === s.nombre.toLowerCase()).length;
+                const count = allEvents.filter(
+                  (e) => e.sport.toLowerCase() === s.nombre.toLowerCase()
+                ).length;
                 return count > 0 ? <StatPill key={s.id} value={count} label={s.nombre} /> : null;
               })}
             </div>
@@ -90,7 +97,7 @@ export default async function HomePage({
       <div className="max-w-6xl mx-auto px-4 py-10">
         {error ? (
           <ErrorMessage message={error} />
-        ) : allEvents.length === 0 ? (
+        ) : events.length === 0 ? (
           <EmptyState hasFilters={hasFilters} />
         ) : (
           <>
@@ -128,6 +135,7 @@ export default async function HomePage({
   );
 }
 
+// Componentes auxiliares
 function StatPill({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1">
@@ -140,7 +148,9 @@ function StatPill({ value, label }: { value: number; label: string }) {
 function ErrorMessage({ message }: { message: string }) {
   return (
     <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
-      <p className="text-red-700 font-bold uppercase tracking-wide text-sm">Sin conexión con el servidor</p>
+      <p className="text-red-700 font-bold uppercase tracking-wide text-sm">
+        Sin conexión con el servidor
+      </p>
       <p className="text-red-500 text-sm mt-1">{message}</p>
       <p className="text-gray-400 text-xs mt-3">
         Backend esperado en{" "}
@@ -156,9 +166,7 @@ function EmptyState({ hasFilters }: { hasFilters: boolean }) {
   return (
     <div className="rounded-2xl border-2 border-dashed border-gray-200 p-16 text-center">
       <p className="text-gray-400 font-bold uppercase tracking-wider text-sm">Sin eventos</p>
-      {hasFilters && (
-        <p className="text-gray-400 text-sm mt-1">Probá ajustando los filtros</p>
-      )}
+      {hasFilters && <p className="text-gray-400 text-sm mt-1">Probá ajustando los filtros</p>}
     </div>
   );
 }

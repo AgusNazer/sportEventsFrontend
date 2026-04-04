@@ -1,10 +1,16 @@
 import type { EventFilters, EventRequest, EventResponse, Location, Sport } from "@/types";
+import type { AuthResponse, LoginRequest, RegisterRequest } from "@/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const BASE_URL = typeof window !== "undefined"
+  ? ""
+  : process.env.NEXT_PUBLIC_API_BASE_URL;
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
     ...options,
   });
 
@@ -21,13 +27,18 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export function getEvents(filters?: EventFilters): Promise<EventResponse[]> {
   const params = new URLSearchParams();
-  if (filters?.sport) params.set("sport", filters.sport);
-  if (filters?.provincia) params.set("provincia", filters.provincia);
-  if (filters?.nivel) params.set("nivel", filters.nivel);
-  if (filters?.desde) params.set("desde", filters.desde);
-  if (filters?.hasta) params.set("hasta", filters.hasta);
-  const qs = params.toString();
-  return request<EventResponse[]>(`/api/events${qs ? `?${qs}` : ""}`);
+
+  if (filters) {
+    if (filters.sport?.trim()) params.set("sport", filters.sport);
+    if (filters.provincia?.trim()) params.set("provincia", filters.provincia);
+    if (filters.nivel?.trim()) params.set("nivel", filters.nivel);
+    if (filters.desde?.trim()) params.set("desde", filters.desde);
+    if (filters.hasta?.trim()) params.set("hasta", filters.hasta);
+  }
+
+  const queryString = params.toString();
+  const path = `/api/events${queryString ? `?${queryString}` : ""}`;
+  return request<EventResponse[]>(path);
 }
 
 export function getThisWeekendEvents(): Promise<EventResponse[]> {
@@ -68,4 +79,28 @@ export function createSport(data: { nombre: string; slug: string }): Promise<Spo
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+// --- Auth ---
+
+export function login(data: LoginRequest): Promise<AuthResponse> {
+  return request<AuthResponse>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function register(data: RegisterRequest): Promise<AuthResponse> {
+  return request<AuthResponse>("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function getMe(): Promise<AuthResponse | null> {
+  return request<AuthResponse>("/api/auth/me").catch(() => null);
+}
+
+export function logoutApi(): Promise<void> {
+  return request<void>("/api/auth/logout", { method: "POST" });
 }

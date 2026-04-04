@@ -2,15 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuthContext } from "@/lib/AuthContext";
 
 const links = [
   { href: "/", label: "Eventos" },
   { href: "/this-weekend", label: "Este fin de semana" },
-  { href: "/admin", label: "Admin" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { email, rol, logout } = useAuthContext();
+
+  const isLoggedIn = !!email;
+  const isAdmin = rol === "ADMIN";
 
   return (
     <header className="bg-dark-950 sticky top-0 z-50">
@@ -41,6 +45,39 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                pathname === "/admin"
+                  ? "bg-brand-600 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              Admin
+            </Link>
+          )}
+
+          {isLoggedIn ? (
+            <button
+              onClick={logout}
+              className="px-4 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              Cerrar sesión
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                pathname === "/login"
+                  ? "bg-brand-600 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              Iniciar sesión
+            </Link>
+          )}
         </nav>
       </div>
     </header>
