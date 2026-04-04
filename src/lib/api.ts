@@ -101,6 +101,11 @@ export function getMe(): Promise<AuthResponse | null> {
   return request<AuthResponse>("/api/auth/me").catch(() => null);
 }
 
-export function logoutApi(): Promise<void> {
-  return request<void>("/api/auth/logout", { method: "POST" });
+export async function logoutApi(): Promise<void> {
+  // return request<void>("/api/auth/logout", { method: "POST" });
+  try {
+    await request<void>("/api/auth/logout", { method: "POST" });
+  } catch {
+    // ignorar error, igual limpiamos el estado
+  }
 }

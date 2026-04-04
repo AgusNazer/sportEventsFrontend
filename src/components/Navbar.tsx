@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthContext } from "@/lib/AuthContext";
+import { useEffect, useState } from "react";
 
 const links = [
   { href: "/", label: "Eventos" },
@@ -11,7 +12,12 @@ const links = [
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { email, rol, logout } = useAuthContext();
+  const { email, nombre, rol, logout } = useAuthContext();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   const isLoggedIn = !!email;
   const isAdmin = rol === "ADMIN";
@@ -31,7 +37,8 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-1">
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-1">
           {links.map(({ href, label }) => (
             <Link
               key={href}
@@ -60,12 +67,17 @@ export default function Navbar() {
           )}
 
           {isLoggedIn ? (
-            <button
-              onClick={logout}
-              className="px-4 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              Cerrar sesión
-            </button>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-400 hidden lg:block">
+                Hola, <span className="text-orange-500 font-semibold">{nombre}</span>
+              </span>
+              <button
+                onClick={logout}
+                className="px-4 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                Cerrar sesión
+              </button>
+            </div>
           ) : (
             <Link
               href="/login"
@@ -79,7 +91,81 @@ export default function Navbar() {
             </Link>
           )}
         </nav>
+
+        {/* Hamburguesa mobile */}
+        <button
+          className="md:hidden text-gray-400 hover:text-white transition-colors p-2"
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          {menuOpen ? (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          )}
+        </button>
       </div>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="md:hidden bg-dark-900 border-t border-white/5 px-4 py-3 flex flex-col gap-1">
+          {isLoggedIn && nombre && (
+            <span className="px-4 py-2 text-sm text-gray-500">
+              Hola, <span className="text-orange-500 font-semibold">{nombre}</span>
+            </span>
+          )}
+
+          {links.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                pathname === href
+                  ? "bg-brand-600 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={`px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                pathname === "/admin"
+                  ? "bg-brand-600 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              Admin
+            </Link>
+          )}
+
+          {isLoggedIn ? (
+            <button
+              onClick={logout}
+              className="px-4 py-2.5 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors text-left"
+            >
+              Cerrar sesión
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className={`px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                pathname === "/login"
+                  ? "bg-brand-600 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              Iniciar sesión
+            </Link>
+          )}
+        </div>
+      )}
     </header>
   );
 }

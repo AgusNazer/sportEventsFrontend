@@ -7,6 +7,7 @@ import type { UserRole } from "@/types";
 
 interface AuthContextType {
   email: string | null;
+  nombre: string | null;
   rol: UserRole | null;
   loading: boolean;
   logout: () => Promise<void>;
@@ -15,6 +16,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   email: null,
+  nombre: null,
   rol: null,
   loading: true,
   logout: async () => {},
@@ -24,12 +26,14 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
+  const [nombre, setNombre] = useState<string | null>(null);
   const [rol, setRol] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function reloadAuth() {
     const me = await getMe();
     setEmail(me?.email ?? null);
+    setNombre(me?.nombre ?? null);
     setRol(me?.rol ?? null);
     setLoading(false);
   }
@@ -37,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function logout() {
     await logoutApi();
     setEmail(null);
+    setNombre(null);
     setRol(null);
     router.replace("/");
   }
@@ -46,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ email, rol, loading, logout, reloadAuth }}>
+    <AuthContext.Provider value={{ email, nombre, rol, loading, logout, reloadAuth }}>
       {children}
     </AuthContext.Provider>
   );
