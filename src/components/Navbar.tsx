@@ -69,7 +69,7 @@ export default function Navbar() {
           {isLoggedIn ? (
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-400 hidden lg:block">
-                Hola, <span className="text-orange-500 font-semibold">{nombre}</span>
+                Hola <span className="text-orange-500 font-semibold">{nombre}</span>
               </span>
               <button
                 onClick={logout}
@@ -114,7 +114,7 @@ export default function Navbar() {
         <div className="md:hidden bg-dark-900 border-t border-white/5 px-4 py-3 flex flex-col gap-1">
           {isLoggedIn && nombre && (
             <span className="px-4 py-2 text-sm text-gray-500">
-              Hola, <span className="text-orange-500 font-semibold">{nombre}</span>
+              Hola <span className="text-orange-500 font-semibold">{nombre}</span>
             </span>
           )}
 

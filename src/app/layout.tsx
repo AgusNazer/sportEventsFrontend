@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { AuthProvider } from "../lib/AuthContext";
+import ChatBot from "@/components/ChatBot";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           <main className="flex-1 w-full">{children}</main>
           <Footer />
+          <ChatBot />
         </AuthProvider>
       </body>
     </html>
