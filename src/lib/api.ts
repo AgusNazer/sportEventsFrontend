@@ -109,3 +109,25 @@ export async function logoutApi(): Promise<void> {
     // ignorar error, igual limpiamos el estado
   }
 }
+
+// --- Favorites ---
+
+export function getFavorites(): Promise<EventResponse[]> {
+  return request<EventResponse[]>("/api/favorites");
+}
+
+export function addFavorite(eventId: string): Promise<void> {
+  return request<void>(`/api/favorites/${eventId}`, {
+    method: "POST",
+  });
+}
+
+export function removeFavorite(eventId: string): Promise<void> {
+  return request<void>(`/api/favorites/${eventId}`, {
+    method: "DELETE",
+  });
+}
+
+export function isFavorite(eventId: string): Promise<boolean> {
+  return request<boolean>(`/api/favorites/${eventId}/check`);
+}

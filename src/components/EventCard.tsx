@@ -1,4 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { addFavorite, removeFavorite, isFavorite } from "@/lib/api";
+import { useAuthContext } from "@/lib/AuthContext";
 import type { EventResponse } from "@/types";
 
 const levelConfig: Record<string, { label: string; className: string }> = {
@@ -7,7 +12,6 @@ const levelConfig: Record<string, { label: string; className: string }> = {
   AVANZADO:     { label: "Avanzado",     className: "bg-red-500/10 text-red-600 border border-red-200" },
 };
 
-// Franja de color y estilo del tag según deporte
 const sportConfig: Record<string, { gradient: string; tagClass: string }> = {
   running:  { gradient: "from-brand-500 to-brand-400",    tagClass: "bg-brand-50 text-brand-700" },
   crossfit: { gradient: "from-orange-500 to-amber-400",   tagClass: "bg-orange-50 text-orange-700" },
@@ -43,6 +47,45 @@ export default function EventCard({ event }: Props) {
   const sport = getSportConfig(event.sport);
   const daysUntil = getDaysUntil(event.fecha);
 
+  // ⭐ FAVORITOS
+  const [favorite, setFavorite] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { email } = useAuthContext();
+
+useEffect(() => {
+  if (!email) return;
+  async function check() {
+    try {
+      const res = await isFavorite(event.id);
+      setFavorite(res);
+    } catch {
+      setFavorite(false);
+    }
+  }
+  check();
+}, [event.id, email]);
+
+  async function toggleFavorite(e: React.MouseEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!email || loading) return;
+
+    setLoading(true);
+    try {
+      if (favorite) {
+        await removeFavorite(event.id);
+        setFavorite(false);
+      } else {
+        await addFavorite(event.id);
+        setFavorite(true);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const urgencyBadge =
     daysUntil === 0 ? { label: "Hoy", className: "bg-red-500 text-white" } :
     daysUntil === 1 ? { label: "Mañana", className: "bg-orange-500 text-white" } :
@@ -51,20 +94,40 @@ export default function EventCard({ event }: Props) {
 
   return (
     <Link href={`/events/${event.slug}`} className="block group">
-      <article className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
+      <article className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
 
-        {/* Franja de color por deporte */}
+        {/* ❤️ BOTÓN FAVORITO */}
+        {email && (
+        <div className="absolute top-3 right-3 z-10">
+          <button
+            onClick={toggleFavorite}
+            className="bg-white/90 backdrop-blur rounded-full p-2 shadow hover:scale-110 transition"
+          >
+            <svg
+              className={`w-5 h-5 ${favorite ? "text-red-500 fill-red-500" : "text-gray-400"}`}
+              viewBox="0 0 24 24"
+              fill={favorite ? "currentColor" : "none"}
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path d="M12 21s-6.716-4.35-9.192-7.192C.686 11.686 1.5 8.5 4.5 7.5c2-.5 3.5.5 4.5 1.5 1-1 2.5-2 4.5-1.5 3 .999 3.814 4.186 1.692 6.308C18.716 16.65 12 21 12 21z" />
+            </svg>
+          </button>
+        </div>
+        )}
+
+        {/* Franja */}
         <div className={`h-1 w-full bg-gradient-to-r ${sport.gradient}`} />
 
         <div className="p-5">
-          {/* Sport tag + nivel */}
+          {/* Tags */}
           <div className="flex items-center justify-between mb-3 gap-2">
             <span className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-md ${sport.tagClass}`}>
               {event.sport}
             </span>
             <div className="flex items-center gap-1.5">
               {urgencyBadge && (
-                <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-md ${urgencyBadge.className}`}>
+                <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${urgencyBadge.className}`}>
                   {urgencyBadge.label}
                 </span>
               )}
@@ -77,58 +140,33 @@ export default function EventCard({ event }: Props) {
           </div>
 
           {/* Nombre */}
-          <h3 className="font-black text-gray-900 text-base leading-snug tracking-tight group-hover:text-brand-700 transition-colors mb-4 uppercase line-clamp-2">
+          <h3 className="font-black text-gray-900 text-base mb-4 uppercase line-clamp-2">
             {event.nombre}
           </h3>
 
-          {/* Fecha + lugar */}
-          <div className="flex items-stretch gap-3">
-            <div className="flex flex-col items-center justify-center bg-dark-950 text-white rounded-xl px-3 py-2 min-w-[52px]">
-              <span className="text-[10px] font-bold text-brand-400 tracking-widest">{weekday}</span>
-              <span className="text-2xl font-black leading-none">{day}</span>
-              <span className="text-[10px] font-semibold text-gray-400 tracking-wider">{month}</span>
+          {/* Info */}
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center bg-dark-950 text-white rounded-xl px-3 py-2 min-w-[52px]">
+              <span className="text-[10px] text-brand-400">{weekday}</span>
+              <span className="text-2xl font-black">{day}</span>
+              <span className="text-[10px] text-gray-400">{month}</span>
             </div>
 
-            <div className="flex flex-col justify-center gap-1.5 text-sm text-gray-600 min-w-0">
-              <p className="flex items-center gap-1.5 truncate">
-                <LocationIcon />
-                <span className="truncate">{event.ciudad}, {event.provincia}</span>
-              </p>
-              {event.distancias && (
-                <p className="flex items-center gap-1.5 truncate">
-                  <RouteIcon />
-                  <span className="truncate">{event.distancias}</span>
-                </p>
-              )}
+            <div className="flex flex-col justify-center text-sm text-gray-600">
+              <p className="truncate">{event.ciudad}, {event.provincia}</p>
+              {event.distancias && <p className="truncate">{event.distancias}</p>}
             </div>
           </div>
 
-          {/* Footer: precio */}
+          {/* Precio */}
           {event.precio && (
-            <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
-              <span className="text-xs text-gray-400 uppercase tracking-wide">Precio</span>
-              <span className="text-sm font-black text-gray-900">{event.precio}</span>
+            <div className="mt-4 pt-3 border-t flex justify-between">
+              <span className="text-xs text-gray-400">Precio</span>
+              <span className="text-sm font-black">{event.precio}</span>
             </div>
           )}
         </div>
       </article>
     </Link>
-  );
-}
-
-function LocationIcon() {
-  return (
-    <svg className="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-    </svg>
-  );
-}
-
-function RouteIcon() {
-  return (
-    <svg className="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c-.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
-    </svg>
   );
 }
