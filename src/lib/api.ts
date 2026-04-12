@@ -1,5 +1,5 @@
 import type { EventFilters, EventRequest, EventResponse, Location, Sport } from "@/types";
-import type { AuthResponse, LoginRequest, RegisterRequest } from "@/types";
+import type { AuthResponse, LoginRequest, RegisterRequest, FavoriteResponse } from "@/types";
 
 const BASE_URL = typeof window !== "undefined"
   ? ""
@@ -112,8 +112,8 @@ export async function logoutApi(): Promise<void> {
 
 // --- Favorites ---
 
-export function getFavorites(): Promise<EventResponse[]> {
-  return request<EventResponse[]>("/api/favorites");
+export function getFavorites(): Promise<FavoriteResponse[]> {
+  return request<FavoriteResponse[]>("/api/favorites");
 }
 
 export function addFavorite(eventId: string): Promise<void> {
@@ -131,3 +131,4 @@ export function removeFavorite(eventId: string): Promise<void> {
 export function isFavorite(eventId: string): Promise<boolean> {
   return request<boolean>(`/api/favorites/${eventId}/check`);
 }
+

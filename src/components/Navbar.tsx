@@ -71,6 +71,16 @@ export default function Navbar() {
               <span className="text-sm text-gray-400 hidden lg:block">
                 Hola <span className="text-orange-500 font-semibold">{nombre}</span>
               </span>
+              <Link
+      href="/favorites"
+      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+        pathname === "/favorites"
+          ? "bg-brand-600 text-white"
+          : "text-gray-400 hover:text-white hover:bg-white/10"
+      }`}
+    >
+      ❤️ Favoritos
+    </Link>
               <button
                 onClick={logout}
                 className="px-4 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors"

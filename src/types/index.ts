@@ -70,3 +70,8 @@ export interface AuthResponse {
   nombre: string
   rol: UserRole;
 }
+
+export interface FavoriteResponse {
+  id: string;
+  event: EventResponse;
+}
