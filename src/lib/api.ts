@@ -1,5 +1,5 @@
 import type { EventFilters, EventRequest, EventResponse, Location, Sport } from "@/types";
-import type { AuthResponse, LoginRequest, RegisterRequest, FavoriteResponse } from "@/types";
+import type { AuthResponse, LoginRequest, RegisterRequest, FavoriteResponse, ReminderResponse } from "@/types";
 
 const BASE_URL = typeof window !== "undefined"
   ? ""
@@ -130,5 +130,26 @@ export function removeFavorite(eventId: string): Promise<void> {
 
 export function isFavorite(eventId: string): Promise<boolean> {
   return request<boolean>(`/api/favorites/${eventId}/check`);
+}
+
+// --- Reminders ---
+
+export function getReminders(): Promise<ReminderResponse[]> {
+  return request<ReminderResponse[]>("/api/reminders");
+}
+
+export function createReminder(eventId: string, diasAntes: number): Promise<ReminderResponse> {
+  return request<ReminderResponse>(`/api/reminders/${eventId}`, {
+    method: "POST",
+    body: JSON.stringify({ diasAntes }),
+  });
+}
+
+export function deleteReminder(eventId: string): Promise<void> {
+  return request<void>(`/api/reminders/${eventId}`, { method: "DELETE" });
+}
+
+export function hasReminder(eventId: string): Promise<boolean> {
+  return request<boolean>(`/api/reminders/${eventId}/check`);
 }
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { addFavorite, removeFavorite, isFavorite } from "@/lib/api";
+import { addFavorite, removeFavorite, isFavorite, createReminder, deleteReminder, hasReminder } from "@/lib/api";
 import { useAuthContext } from "@/lib/AuthContext";
 import type { EventResponse } from "@/types";
 
@@ -51,25 +51,32 @@ export default function EventCard({ event }: Props) {
   const [favorite, setFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
   const { email } = useAuthContext();
+  // notificaciones de recordatorio de eventos
+  const [reminder, setReminder] = useState(false);
+  const [showReminderMenu, setShowReminderMenu] = useState(false);
 
 useEffect(() => {
-  if (!email) return;
-  async function check() {
-    try {
-      const res = await isFavorite(event.id);
-      setFavorite(res);
-    } catch {
-      setFavorite(false);
+    if (!email) return;
+    async function check() {
+      try {
+        const [fav, rem] = await Promise.all([
+          isFavorite(event.id),
+          hasReminder(event.id),
+        ]);
+        setFavorite(fav);
+        setReminder(rem);
+      } catch {
+        setFavorite(false);
+        setReminder(false);
+      }
     }
-  }
-  check();
-}, [event.id, email]);
+    check();
+  }, [event.id, email]);
 
   async function toggleFavorite(e: React.MouseEvent) {
-  e.preventDefault();
-  e.stopPropagation();
-  if (!email || loading) return;
-
+    e.preventDefault();
+    e.stopPropagation();
+    if (!email || loading) return;
     setLoading(true);
     try {
       if (favorite) {
@@ -85,6 +92,26 @@ useEffect(() => {
       setLoading(false);
     }
   }
+  async function toggleReminder(dias: number, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!email || loading) return;
+    setLoading(true);
+    try {
+      if (reminder) {
+        await deleteReminder(event.id);
+        setReminder(false);
+      } else {
+        await createReminder(event.id, dias);
+        setReminder(true);
+      }
+      setShowReminderMenu(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const urgencyBadge =
     daysUntil === 0 ? { label: "Hoy", className: "bg-red-500 text-white" } :
@@ -92,28 +119,73 @@ useEffect(() => {
     daysUntil <= 7  ? { label: `En ${daysUntil} días`, className: "bg-amber-400 text-amber-900" } :
     null;
 
-  return (
+    return (
     <Link href={`/events/${event.slug}`} className="block group">
       <article className="relative bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200">
 
-        {/* ❤️ BOTÓN FAVORITO */}
         {email && (
-        <div className="absolute top-3 right-3 z-10">
-          <button
-            onClick={toggleFavorite}
-            className="bg-white/90 backdrop-blur rounded-full p-2 shadow hover:scale-110 transition"
-          >
-            <svg
-              className={`w-5 h-5 ${favorite ? "text-red-500 fill-red-500" : "text-gray-400"}`}
-              viewBox="0 0 24 24"
-              fill={favorite ? "currentColor" : "none"}
-              stroke="currentColor"
-              strokeWidth={2}
+          <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
+            {/* Favorito */}
+            <button
+              onClick={toggleFavorite}
+              className="bg-white/90 backdrop-blur rounded-full p-2 shadow hover:scale-110 transition"
             >
-              <path d="M12 21s-6.716-4.35-9.192-7.192C.686 11.686 1.5 8.5 4.5 7.5c2-.5 3.5.5 4.5 1.5 1-1 2.5-2 4.5-1.5 3 .999 3.814 4.186 1.692 6.308C18.716 16.65 12 21 12 21z" />
-            </svg>
-          </button>
-        </div>
+              <svg
+                className={`w-5 h-5 ${favorite ? "text-red-500 fill-red-500" : "text-gray-400"}`}
+                viewBox="0 0 24 24"
+                fill={favorite ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path d="M12 21s-6.716-4.35-9.192-7.192C.686 11.686 1.5 8.5 4.5 7.5c2-.5 3.5.5 4.5 1.5 1-1 2.5-2 4.5-1.5 3 .999 3.814 4.186 1.692 6.308C18.716 16.65 12 21 12 21z" />
+              </svg>
+            </button>
+
+            {/* Recordatorio */}
+            <div className="relative">
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowReminderMenu(!showReminderMenu); }}
+                className={`bg-white/90 backdrop-blur rounded-full p-2 shadow hover:scale-110 transition ${reminder ? "text-brand-500" : "text-gray-400"}`}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                </svg>
+              </button>
+
+              {showReminderMenu && !reminder && (
+                <div
+                  className="absolute right-0 top-10 bg-white rounded-xl shadow-xl border border-gray-100 p-2 flex flex-col gap-1 w-36 z-20"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                >
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider px-2 pb-1">Recordar en</p>
+                  {[1, 3, 7, 15].map((dias) => (
+                    <button
+                      key={dias}
+                      onClick={(e) => toggleReminder(dias, e)}
+                      className="text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 rounded-lg px-3 py-1.5 text-left transition-colors"
+                    >
+                      {dias === 1 ? "1 día antes" : `${dias} días antes`}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {showReminderMenu && reminder && (
+                <div
+                  className="absolute right-0 top-10 bg-white rounded-xl shadow-xl border border-gray-100 p-2 w-36 z-20"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                >
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider px-2 pb-1">Recordatorio activo</p>
+                  <button
+                    onClick={(e) => toggleReminder(0, e)}
+                    className="text-sm text-red-500 hover:bg-red-50 rounded-lg px-3 py-1.5 text-left w-full transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Franja */}

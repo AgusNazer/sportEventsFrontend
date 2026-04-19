@@ -75,3 +75,11 @@ export interface FavoriteResponse {
   id: string;
   event: EventResponse;
 }
+
+export interface ReminderResponse {
+  id: string;
+  eventId: string;
+  eventNombre: string;
+  eventFecha: string;
+  diasAntes: number;
+}
